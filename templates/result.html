@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition Result</title>
+</head>
+<body>
+    <h1>Face Recognition Result</h1>
+    <p>Recognized Person: {{ name }}</p>
+    <img src="{{ image }}" alt="Recognized Image" style="max-width: 100%;">
+    {% if name == 'Himanshu' %}
+    <a href="/work.html"><button>Proceed to Work</button></a>
+    {% elif name == 'Unknown' %}
+    <a href="/"><button>Go Back to Home</button></a>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Project</title>
+    <style>
+        /* Use a more specific selector to target the button */
+        form button#capture-button {
+            font-size: 20px !important;
+            background-color: green !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border: none !important;
+            cursor: pointer !important;
+        }
+
+        /* Add hover styles using a more specific selector */
+        form button#capture-button:hover {
+            background-color: darkgreen !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Greetings! Please Confirm Your Identity</h1>
+    <div id="video-container">
+        <img id="webcam-video" src="{{ url_for('video') }}" style="max-width: 100%;">
+    </div>
+    <form action="/capture" method="post">
+        <button type="submit" id="capture-button">Capture Image</button>
+    </form>
+
+</body>
+</html>
