@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+from activities import utils
 from flask import Flask, render_template, Response, request, redirect, url_for
 
 app = Flask(__name__)
@@ -107,10 +108,10 @@ def detect_faces(our_image):
         if uncertainity < 70:  # You may need to adjust this threshold
             if (Id == 1 or Id == 2):
                 name = 'Himanshu'
-                cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.9, (0, 255, 0), 2)
+                cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.9, utils.GREEN, 2)
 
         else:
-            cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+            cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, utils.RED, 2)
         print(f"Name is: {name}")
 
     return our_image, name

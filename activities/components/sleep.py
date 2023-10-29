@@ -12,7 +12,7 @@ class SleepDetection:
     def __init__(self):
         try:
             # Global Configuration Variables
-            self.FACIAL_LANDMARK_PREDICTOR = "shape_predictor_68_face_landmarks.dat"  # path to dlib's pre-trained facial landmark predictor
+            self.FACIAL_LANDMARK_PREDICTOR = "activities/components/shape_predictor_68_face_landmarks.dat"  # path to dlib's pre-trained facial landmark predictor
             self.MINIMUM_EAR = 0.23  # Minimum EAR for both the eyes to mark the eyes as open
             self.MAXIMUM_FRAME_COUNT = 50  # Maximum number of consecutive frames in which EAR can remain less than MINIMUM_EAR, otherwise alert drowsiness
             self.activeness_status = 'Drowsy'

@@ -1,84 +1,82 @@
-from flask import Flask, render_template, request, jsonify
-import cv2
+import cv2 as cv
+import time
+import dlib
+import mediapipe as mp
 import numpy as np
-import os
-import base64
+from imutils import face_utils
+from scipy.spatial import distance as dist
+from activities import utils
+from activities.components.face_direction import FaceDirectionDetector
+from activities.components.phone_proximity import PhoneEarProximity
+from activities.components.sleep import SleepDetection
+from activities.components.employee_presence import FaceTimeSpend
 
-app = Flask(__name__)
-
-# Load the trained recognizer model
-current_directory = os.path.abspath(os.path.dirname(__file__))
-recognizer = cv2.face.FisherFaceRecognizer_create()
-recognizer_file_path = os.path.join(current_directory, r'recognition_dataset\trainingData.yml')
-
-if os.path.exists(recognizer_file_path):
-    recognizer.read(recognizer_file_path)
-
-# Load the cascade classifier for face detection
-face_cascade_file = r'recognition_dataset\haarcascade_frontalface_default.xml'
-face_cascade_path = os.path.join(current_directory, face_cascade_file)
-
-if os.path.exists(face_cascade_path):
-    detector = cv2.CascadeClassifier(face_cascade_path)
+# Initialize MediaPipe solutions for face detection and pose estimation
+mp_face_detection = mp.solutions.face_detection
+mp_pose = mp.solutions.pose
+mp_face_dir = mp.solutions.face_mesh
 
 
-@app.route('/')
-def index():
-    return render_template('imagesave.html')
+# Initialize the camera capture using OpenCV
+cap = cv.VideoCapture(0)
 
+frame_counter = 0  # Counter for frames
+EYE_CLOSED_COUNTER = 0   # Counter for sleep detection
+start_time = time.time()  # Start time of the program
+face_timer = FaceTimeSpend()  # Initialize the face time tracker
+phone_proximity = PhoneEarProximity()  # Initialize phone proximity tracker
+face_direction_detector = FaceDirectionDetector()   # Initialize Face Direction Tracker
+sleep_detector = SleepDetection()   # Initialize Sleep Detection Tracker
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    image_data = request.form['image']
-    image = decode_image_data(image_data)
-    result_image, name = detect_faces(image)
-    result_image_data = encode_image(result_image)
-    return jsonify({'image': result_image_data, 'name': name})
+while True:
+    frame_counter += 1  # Increment frame counter
+    ret, frame = cap.read()  # Read a frame from the camera
+    if ret is False:
+        break
 
+    # HERE WE WORK ON GETTING FACE TIME
+    face_timer.detect_face_time(frame=frame)
+    total_face_time_formatted, session_time_formatted, session_id = face_timer.get_time()
 
-def decode_image_data(image_data):
-    image_data = image_data.replace('data:image/png;base64,', '')
-    image_data = image_data.encode()
-    image = np.frombuffer(base64.b64decode(image_data), np.uint8)
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    return image
+    # HERE WE WORK ON GETTING PHONE PROXIMITY
+    phone_proximity.phone(frame=frame)
+    phone_status = "Phone Near Ear" if phone_proximity.phone_near_ear else "Phone Not Near Ear"
+    phone_elapsed_time = face_timer.format_time(phone_proximity.get_elapsed_time())
 
+    # HERE WE WORK ON GETTING FACE DIRECTION
+    face_direction_detector.detect_face_direction(frame)
+    face_direction = face_direction_detector.get_face_direction()
+    face_away_time = face_timer.format_time(face_direction_detector.get_elapsed_time())
 
-def encode_image(image):
-    _, buffer = cv2.imencode('.png', image)
-    encoded_image = base64.b64encode(buffer).decode()
-    return 'data:image/png;base64,' + encoded_image
+    # HERE WE WORK ON GETTING SLEEP DETECTION
+    sleep_detector.detect_sleep(frame)
+    sleep_status = sleep_detector.activity_status()
+    sleep_time = face_timer.format_time(sleep_detector.get_elapsed_time())
 
+    # Display relevant information on the frame
+    text_to_display = f"Time: {total_face_time_formatted} S-Time: {session_time_formatted} S_ID: {session_id}"
+    phone_text_to_display = f"Phone Status: {phone_status} Elapsed Time: {phone_elapsed_time} s"
+    face_direction_display = f'Face: {face_direction} | Away Time: {face_away_time}'
+    sleep_text_to_display = f'Activeness Status: {sleep_status} | Drowsy: {sleep_time}'
 
-def detect_faces(our_image):
-    gray = cv2.cvtColor(our_image, cv2.COLOR_BGR2GRAY)
+    utils.text_with_background(image=frame, text=text_to_display, position=(20, 60),
+                               fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+    utils.text_with_background(image=frame, text=phone_text_to_display, position=(20, 90),
+                               fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+    utils.text_with_background(image=frame, text=face_direction_display, position=(20, 120),
+                               fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+    utils.text_with_background(image=frame, text=sleep_text_to_display, position=(20, 150),
+                               fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
 
-    # Detect faces
-    faces = detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+    fps = frame_counter / (time.time() - start_time)  # Calculate frames per second
+    utils.text_with_background(image=frame, text=f"FPS: {fps:.2f}", position=(20, 30), fonts=cv.FONT_HERSHEY_PLAIN)
 
-    name = 'Unknown'
-    for (x, y, w, h) in faces:
-        # Drawing rectangle
-        cv2.rectangle(our_image, (x, y), (x + w, y + h), (255, 255, 0), 2)
+    # Display the frame with the information
+    cv.imshow('frame', frame)
 
-        # Recognize the face
-        face_roi = gray[y:y + h, x:x + w]
+    key = cv.waitKey(1)
+    if key == ord('q'):
+        break
 
-        # Resizing
-        face_roi = cv2.resize(face_roi, (170, 170))
-        Id, confidence = recognizer.predict(face_roi)
-
-        # Determine if the face belongs to a known person or is unknown
-        if confidence * 100 > 70:  # You may need to adjust this threshold
-            if (Id == 1 or Id == 2):
-                name = 'Himanshu'
-                cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.9, (0, 255, 0), 2)
-
-        else:
-            cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-
-    return our_image, name
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+cap.release()  # Release the camera
+cv.destroyAllWindows()  # Close OpenCV windows
