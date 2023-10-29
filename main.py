@@ -1,10 +1,6 @@
 import cv2 as cv
 import time
-import dlib
 import mediapipe as mp
-import numpy as np
-from imutils import face_utils
-from scipy.spatial import distance as dist
 from activities import utils
 from activities.components.face_direction import FaceDirectionDetector
 from activities.components.phone_proximity import PhoneEarProximity
@@ -44,12 +40,12 @@ while True:
     phone_elapsed_time = face_timer.format_time(phone_proximity.get_elapsed_time())
 
     # HERE WE WORK ON GETTING FACE DIRECTION
-    face_direction_detector.detect_face_direction(frame)
+    face_direction_detector.detect_face_direction(frame=frame)
     face_direction = face_direction_detector.get_face_direction()
     face_away_time = face_timer.format_time(face_direction_detector.get_elapsed_time())
 
     # HERE WE WORK ON GETTING SLEEP DETECTION
-    sleep_detector.detect_sleep(frame)
+    sleep_detector.detect_sleep(frame=frame)
     sleep_status = sleep_detector.activity_status()
     sleep_time = face_timer.format_time(sleep_detector.get_elapsed_time())
 
