@@ -1,5 +1,8 @@
 import cv2
 import os
+import sys
+from activities.exception import CustomException
+
 
 if not os.path.exists('dataset'):
     os.makedirs('dataset')
@@ -9,22 +12,32 @@ detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 Id = input('enter your ID:')
 sampleNum = 0
-while True:
-    ret, img = cam.read()
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = detector.detectMultiScale(gray, 1.3, 5)
-    for (x, y, w, h) in faces:
-        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        file_path = 'dataset/User.' + Id + '.' + str(sampleNum) + '.jpg'
-        print(file_path)
-        # Saving the captured face in the dataset folder
-        cv2.imwrite(file_path, gray[y:y+h, x:x+w])
-        sampleNum = sampleNum + 1
-        cv2.imshow('frame', img)
 
-    # Break if the sample number is more than 20
-    if sampleNum > 20:
-        break
+try:
+    while True:
+        ret, img = cam.read()
+        if not ret:
+            raise Exception("Camera capture failed")
 
-cam.release()
-cv2.destroyAllWindows()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = detector.detectMultiScale(gray, 1.3, 5)
+        for (x, y, w, h) in faces:
+            cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            file_path = 'dataset/User.' + Id + '.' + str(sampleNum) + '.jpg'
+            print(file_path)
+            # Saving the captured face in the dataset folder
+            cv2.imwrite(file_path, gray[y:y+h, x:x+w])
+            sampleNum = sampleNum + 1
+            cv2.imshow('frame', img)
+
+        # Break if the sample number is more than 20
+        if sampleNum > 20:
+            break
+
+except Exception as e:
+    raise CustomException(e, sys)
+
+finally:
+    # Release camera and destroy OpenCV windows
+    cam.release()
+    cv2.destroyAllWindows()
