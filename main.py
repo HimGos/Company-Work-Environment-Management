@@ -9,13 +9,13 @@ app = Flask(__name__)
 # Load the trained recognizer model
 current_directory = os.path.abspath(os.path.dirname(__file__))
 recognizer = cv2.face.FisherFaceRecognizer_create()
-recognizer_file_path = os.path.join(current_directory, r'face_recognition\trainingData.yml')
+recognizer_file_path = os.path.join(current_directory, r'recognition_dataset\trainingData.yml')
 
 if os.path.exists(recognizer_file_path):
     recognizer.read(recognizer_file_path)
 
 # Load the cascade classifier for face detection
-face_cascade_file = r'face_recognition\haarcascade_frontalface_default.xml'
+face_cascade_file = r'recognition_dataset\haarcascade_frontalface_default.xml'
 face_cascade_path = os.path.join(current_directory, face_cascade_file)
 
 if os.path.exists(face_cascade_path):

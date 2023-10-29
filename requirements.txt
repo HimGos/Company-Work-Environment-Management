@@ -1,0 +1,10 @@
+opencv-python~=4.8.0.76
+flask~=3.0.0
+numpy~=1.24.1
+mediapipe~=0.10.3
+streamlit~=1.27.2
+pillow~=9.3.0
+dlib~=19.24.0
+imutils~=0.5.4
+scipy~=1.11.2
+-e .

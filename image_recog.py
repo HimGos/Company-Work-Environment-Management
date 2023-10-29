@@ -72,13 +72,13 @@ def detect_faces(our_image):
     # recognizer = cv2.face.FisherFaceRecognizer_create()
     recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-    recognizer_file_path = os.path.join(current_directory, 'face_recognition/trainingData.yml')
+    recognizer_file_path = os.path.join(current_directory, 'recognition_dataset/trainingData.yml')
 
     if os.path.exists(recognizer_file_path):
         recognizer.read(recognizer_file_path)
 
     # Load the cascade classifier for face detection
-    face_cascade_file = 'face_recognition/haarcascade_frontalface_default.xml'
+    face_cascade_file = 'recognition_dataset/haarcascade_frontalface_default.xml'
     face_cascade_path = os.path.join(current_directory, face_cascade_file)
 
     if os.path.exists(face_cascade_path):
