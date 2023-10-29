@@ -2,9 +2,11 @@ import time
 import cv2 as cv
 import dlib
 import sys
+from activities import utils
 from imutils import face_utils
 from scipy.spatial import distance as dist
 from activities.exception import CustomException
+
 
 class SleepDetection:
     def __init__(self):
@@ -59,8 +61,8 @@ class SleepDetection:
                 leftEyeHull = cv.convexHull(leftEye)
                 rightEyeHull = cv.convexHull(rightEye)
 
-                cv.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-                cv.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+                cv.drawContours(frame, [leftEyeHull], -1, utils.GREEN, 1)
+                cv.drawContours(frame, [rightEyeHull], -1, utils.GREEN, 1)
 
                 if ear < self.MINIMUM_EAR:
                     self.EYE_CLOSED_COUNTER += 1
