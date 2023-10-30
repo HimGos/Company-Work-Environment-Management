@@ -1,7 +1,7 @@
 import cv2 as cv
 import os
 import time
-import numpy as np
+import json
 import mediapipe as mp
 from activities import utils
 from activities.components.face_direction import FaceDirectionDetector
@@ -21,8 +21,11 @@ mp_pose = mp.solutions.pose
 mp_face_dir = mp.solutions.face_mesh
 
 frame_counter = 0  # Counter for frames
-EYE_CLOSED_COUNTER = 0   # Counter for sleep detection
 start_time = time.time()  # Start time of the program
+EMP_NAME = ''
+work_duration = 0
+
+# Defining class objects
 face_timer = FaceTimeSpend()  # Initialize the face time tracker
 phone_proximity = PhoneEarProximity()  # Initialize phone proximity tracker
 face_direction_detector = FaceDirectionDetector()   # Initialize Face Direction Tracker
@@ -81,6 +84,8 @@ def work():
 
 @app.route('/stats')
 def stats():
+    global work_duration
+
     phone_usage_time = face_timer.format_time(phone_proximity.get_elapsed_time())
     face_away_time = face_timer.format_time(face_direction_detector.get_elapsed_time())
     sleep_time = face_timer.format_time(sleep_detector.get_elapsed_time())
@@ -94,8 +99,45 @@ def stats():
 
     work_duration = face_timer.format_time(work_duration)
 
+    present_on_screen_time, session_time_formatted, times_away = face_timer.get_time()
+
     return render_template('stats.html', phone_usage_time=phone_usage_time, face_away_time=face_away_time,
-                           sleep_time=sleep_time, work_duration=work_duration)
+                           sleep_time=sleep_time, work_duration=work_duration, present_on_screen_time=present_on_screen_time,
+                           times_away=times_away, emp_name=EMP_NAME)
+
+
+@app.route('/record_employee_stats', methods=['POST'])
+def record_employee_stats():
+
+    global work_duration
+    present_on_screen_time, session_time_formatted, times_away = face_timer.get_time()
+    # Collect the stats data in a JSON file
+    stats_data = {
+        'Employee Name': EMP_NAME,
+        'Work Duration': work_duration,
+        'Times Away From Screen': times_away,
+        'Present on Screen Duration': present_on_screen_time,
+        'Phone Usage': face_timer.format_time(phone_proximity.get_elapsed_time()),
+        'Looking Away': face_timer.format_time(face_direction_detector.get_elapsed_time()),
+        'Sleepy / Drowsy': face_timer.format_time(sleep_detector.get_elapsed_time())
+    }
+
+    # Get the absolute path to your project directory
+    project_dir = os.path.abspath(os.path.dirname(__file__))
+
+    # Create a folder 'employee stats' if it doesn't exist
+    stats_folder = os.path.join(project_dir, 'employee_stats')
+    if not os.path.exists(stats_folder):
+        os.makedirs(stats_folder)
+
+    # Define the absolute path to the stats file
+    stats_file = os.path.join(stats_folder, f"{EMP_NAME}_stats.json")
+
+    # Save the stats data to the JSON file
+    with open(stats_file, 'w') as json_file:
+        json.dump(stats_data, json_file)
+
+    return redirect(url_for('stats'))
 
 
 def generate_frame():
@@ -164,6 +206,7 @@ def gen_work_frame():
 
 
 def detect_faces(our_image):
+    global EMP_NAME
     # Get the full path to the current directory
     current_directory = os.path.abspath(os.path.dirname(__file__))
 
@@ -206,6 +249,7 @@ def detect_faces(our_image):
         if uncertainity < 70:  # You may need to adjust this threshold
             if (Id == 1 or Id == 2):
                 name = 'Himanshu'
+                EMP_NAME = name
                 cv.putText(our_image, name, (x, y - 10), cv.FONT_HERSHEY_DUPLEX, 0.9, utils.GREEN, 2)
 
         else:

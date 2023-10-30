@@ -2,9 +2,17 @@
 <html>
 <head>
     <title>Employee Stats</title>
+    <script>
+        function showSuccessAlert() {
+            alert("Employee Data Recorded");
+        }
+    </script>
 </head>
 <body>
     <h1>Employee Stats</h1>
+
+    <h2>Employee Name</h2>
+    <p>Name: {{ emp_name }}</p>
 
     <h2>Phone Usage</h2>
     <p>Total Phone Usage Time: {{ phone_usage_time }} sec.</p>
@@ -15,8 +23,24 @@
     <h2>Sleep Detection</h2>
     <p>Total Sleep Time: {{ sleep_time }} sec.</p>
 
-    <!-- Add a section for total work duration -->
     <h2>Work Duration</h2>
     <p>Total Work Duration: {{ work_duration }} sec.</p>
+
+    <h2>Present on seat</h2>
+    <p>Presence Duration: {{ present_on_screen_time }} sec.</p>
+
+    <h2>Times Away</h2>
+    <p>Times away from screen: {{ times_away }}</p>
+
+    <!-- Add 'Start Shift' button -->
+    <form action="/">
+        <input type="submit" value="Start Shift">
+    </form>
+
+    <!-- Add 'Send Data' button and call the JavaScript function to show an alert -->
+    <form action="/record_employee_stats" method="post" onsubmit="showSuccessAlert()">
+        <input type="submit" value="Send Data">
+    </form>
+
 </body>
 </html>
