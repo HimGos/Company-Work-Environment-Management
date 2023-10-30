@@ -92,6 +92,8 @@ def stats():
     else:
         work_duration = 0  # Default to 0 if start_time is not set
 
+    work_duration = face_timer.format_time(work_duration)
+
     return render_template('stats.html', phone_usage_time=phone_usage_time, face_away_time=face_away_time,
                            sleep_time=sleep_time, work_duration=work_duration)
 
