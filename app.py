@@ -81,9 +81,9 @@ def work():
 
 @app.route('/stats')
 def stats():
-    phone_usage_time = phone_proximity.get_elapsed_time()
-    face_away_time = face_direction_detector.get_elapsed_time()
-    sleep_time = sleep_detector.get_elapsed_time()
+    phone_usage_time = face_timer.format_time(phone_proximity.get_elapsed_time())
+    face_away_time = face_timer.format_time(face_direction_detector.get_elapsed_time())
+    sleep_time = face_timer.format_time(sleep_detector.get_elapsed_time())
 
     # Calculate total work duration using start_time and end_time
     if start_time:
