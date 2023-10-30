@@ -29,7 +29,6 @@ face_direction_detector = FaceDirectionDetector()   # Initialize Face Direction 
 sleep_detector = SleepDetection()   # Initialize Sleep Detection Tracker
 
 
-
 @app.route('/')
 def index():
     return render_template('imagesave.html')
@@ -80,6 +79,23 @@ def work():
     return render_template('work.html')
 
 
+@app.route('/stats')
+def stats():
+    phone_usage_time = phone_proximity.get_elapsed_time()
+    face_away_time = face_direction_detector.get_elapsed_time()
+    sleep_time = sleep_detector.get_elapsed_time()
+
+    # Calculate total work duration using start_time and end_time
+    if start_time:
+        end_time = time.time()  # Get the current time as the end time
+        work_duration = end_time - start_time
+    else:
+        work_duration = 0  # Default to 0 if start_time is not set
+
+    return render_template('stats.html', phone_usage_time=phone_usage_time, face_away_time=face_away_time,
+                           sleep_time=sleep_time, work_duration=work_duration)
+
+
 def generate_frame():
     while True:
         success, frame = camera.read()
@@ -93,6 +109,7 @@ def generate_frame():
 
 def gen_work_frame():
     global frame_counter
+
     while True:
         success, frame = camera.read()
         if not success:
@@ -194,8 +211,6 @@ def detect_faces(our_image):
         print(f"Name is: {name}")
 
     return our_image, name
-
-
 
 
 if __name__ == "__main__":

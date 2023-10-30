@@ -9,5 +9,10 @@
     <div id="video-container">
         <img id="webcam-video" src="{{ url_for('workvideo') }}" style="max-width: 100%;">
     </div>
+
+    <!-- Add "End Shift" button that links to the "stats" page -->
+    <form action="{{ url_for('stats') }}" method="get">
+        <button type="submit">End Shift</button>
+    </form>
 </body>
 </html>
