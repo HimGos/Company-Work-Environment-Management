@@ -1,5 +1,6 @@
-import cv2
+import cv2 as cv
 import os
+import time
 import numpy as np
 import mediapipe as mp
 from activities import utils
@@ -12,12 +13,21 @@ from flask import Flask, render_template, Response, request, redirect, url_for
 
 app = Flask(__name__)
 
-camera = cv2.VideoCapture(0)
+camera = cv.VideoCapture(0)
 
 # Initialize MediaPipe solutions for face detection and pose estimation
 mp_face_detection = mp.solutions.face_detection
 mp_pose = mp.solutions.pose
 mp_face_dir = mp.solutions.face_mesh
+
+frame_counter = 0  # Counter for frames
+EYE_CLOSED_COUNTER = 0   # Counter for sleep detection
+start_time = time.time()  # Start time of the program
+face_timer = FaceTimeSpend()  # Initialize the face time tracker
+phone_proximity = PhoneEarProximity()  # Initialize phone proximity tracker
+face_direction_detector = FaceDirectionDetector()   # Initialize Face Direction Tracker
+sleep_detector = SleepDetection()   # Initialize Sleep Detection Tracker
+
 
 
 @app.route('/')
@@ -30,6 +40,11 @@ def video():
     return Response(generate_frame(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+@app.route('/workvideo')
+def workvideo():
+    return Response(gen_work_frame(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 @app.route('/capture', methods=['POST'])
 def capture():
     # Capture an image from the webcam
@@ -39,7 +54,7 @@ def capture():
     if not os.path.exists('./shots'):
         os.makedirs('./shots')
     image_path = './shots/captured_image.jpg'
-    cv2.imwrite(image_path, frame)
+    cv.imwrite(image_path, frame)
 
     return redirect(url_for('result'))
 
@@ -48,14 +63,14 @@ def capture():
 def result():
     # Load the captured image from the ./shots directory
     image_path = './shots/captured_image.jpg'
-    captured_image = cv2.imread(image_path)
+    captured_image = cv.imread(image_path)
 
     # Perform face recognition on the captured image
     result_image, recognized_name = detect_faces(captured_image)
 
     # Save the result image to a temporary file (e.g., "result.jpg")
     result_image_path = 'static/result.jpg'
-    cv2.imwrite(result_image_path, result_image)
+    cv.imwrite(result_image_path, result_image)
 
     return render_template('result.html', name=recognized_name, image=result_image_path)
 
@@ -70,10 +85,63 @@ def generate_frame():
         success, frame = camera.read()
         if not success:
             break
-        ret, buffer = cv2.imencode('.jpg', frame)
+        ret, buffer = cv.imencode('.jpg', frame)
         frame = buffer.tobytes()
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+def gen_work_frame():
+    global frame_counter
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            frame_counter += 1  # Increment frame counter
+
+            # HERE WE WORK ON GETTING FACE TIME
+            face_timer.detect_face_time(frame=frame)
+            total_face_time_formatted, session_time_formatted, session_id = face_timer.get_time()
+
+            # HERE WE WORK ON GETTING PHONE PROXIMITY
+            phone_proximity.phone(frame=frame)
+            phone_status = "Phone Near Ear" if phone_proximity.phone_near_ear else "Phone Not Near Ear"
+            phone_elapsed_time = face_timer.format_time(phone_proximity.get_elapsed_time())
+
+            # HERE WE WORK ON GETTING FACE DIRECTION
+            face_direction_detector.detect_face_direction(frame=frame)
+            face_direction = face_direction_detector.get_face_direction()
+            face_away_time = face_timer.format_time(face_direction_detector.get_elapsed_time())
+
+            # HERE WE WORK ON GETTING SLEEP DETECTION
+            sleep_detector.detect_sleep(frame=frame)
+            sleep_status = sleep_detector.activity_status()
+            sleep_time = face_timer.format_time(sleep_detector.get_elapsed_time())
+
+            # Display relevant information on the frame
+            text_to_display = f"Time: {total_face_time_formatted} S-Time: {session_time_formatted} S_ID: {session_id}"
+            phone_text_to_display = f"Phone Status: {phone_status} Elapsed Time: {phone_elapsed_time} s"
+            face_direction_display = f'Face: {face_direction} | Away Time: {face_away_time}'
+            sleep_text_to_display = f'Activeness Status: {sleep_status} | Drowsy: {sleep_time}'
+
+            utils.text_with_background(image=frame, text=text_to_display, position=(20, 60),
+                                       fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+            utils.text_with_background(image=frame, text=phone_text_to_display, position=(20, 90),
+                                       fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+            utils.text_with_background(image=frame, text=face_direction_display, position=(20, 120),
+                                       fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+            utils.text_with_background(image=frame, text=sleep_text_to_display, position=(20, 150),
+                                       fonts=cv.FONT_HERSHEY_PLAIN, color=utils.YELLOW)
+
+            fps = frame_counter / (time.time() - start_time)  # Calculate frames per second
+            utils.text_with_background(image=frame, text=f"FPS: {fps:.2f}", position=(20, 30),
+                                       fonts=cv.FONT_HERSHEY_PLAIN)
+
+            ret, buffer = cv.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
 def detect_faces(our_image):
@@ -82,7 +150,7 @@ def detect_faces(our_image):
 
     # Load the trained recognizer model
     # recognizer = cv2.face.FisherFaceRecognizer_create()
-    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer = cv.face.LBPHFaceRecognizer_create()
 
     recognizer_file_path = os.path.join(current_directory, 'recognition_dataset/trainingData.yml')
 
@@ -94,10 +162,10 @@ def detect_faces(our_image):
     face_cascade_path = os.path.join(current_directory, face_cascade_file)
 
     if os.path.exists(face_cascade_path):
-        detector = cv2.CascadeClassifier(face_cascade_path)
+        detector = cv.CascadeClassifier(face_cascade_path)
         # print(f'Detector Path: {face_cascade_path} | Detector: {detector}')
 
-    gray = cv2.cvtColor(our_image, cv2.COLOR_BGR2GRAY)
+    gray = cv.cvtColor(our_image, cv.COLOR_BGR2GRAY)
 
     # Detect faces
     faces = detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
@@ -105,13 +173,13 @@ def detect_faces(our_image):
     name = 'Unknown'
     for (x, y, w, h) in faces:
         # Drawing rectangle
-        cv2.rectangle(our_image, (x, y), (x + w, y + h), (255, 255, 0), 2)
+        cv.rectangle(our_image, (x, y), (x + w, y + h), (255, 255, 0), 2)
 
         # Recognize the face
         face_roi = gray[y:y + h, x:x + w]
 
         # Resizing
-        face_roi = cv2.resize(face_roi, (170, 170))
+        face_roi = cv.resize(face_roi, (170, 170))
         Id, uncertainity = recognizer.predict(face_roi)
         print(f'ID is: {Id} | Uncertainity is {uncertainity}')
 
@@ -119,13 +187,15 @@ def detect_faces(our_image):
         if uncertainity < 70:  # You may need to adjust this threshold
             if (Id == 1 or Id == 2):
                 name = 'Himanshu'
-                cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.9, utils.GREEN, 2)
+                cv.putText(our_image, name, (x, y - 10), cv.FONT_HERSHEY_DUPLEX, 0.9, utils.GREEN, 2)
 
         else:
-            cv2.putText(our_image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, utils.RED, 2)
+            cv.putText(our_image, name, (x, y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.9, utils.RED, 2)
         print(f"Name is: {name}")
 
     return our_image, name
+
+
 
 
 if __name__ == "__main__":
