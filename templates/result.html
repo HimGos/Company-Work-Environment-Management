@@ -2,15 +2,48 @@
 <html>
 <head>
     <title>Face Recognition Result</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .button-style {
+            background-color: green;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Face Recognition Result</h1>
     <p>Recognized Person: {{ name }}</p>
-    <img src="{{ image }}" alt="Recognized Image" style="max-width: 100%;">
-    {% if name == 'Himanshu' %}
-    <a href="/work.html"><button>Proceed to Work</button></a>
-    {% elif name == 'Unknown' %}
-    <a href="/"><button>Go Back to Home</button></a>
-    {% endif %}
+
+    <div class="center-content">
+        <img src="{{ image }}" alt="Recognized Image" style="max-width: 100%;">
+        {% if name == 'Himanshu' %}
+        <a href="/work.html">
+            <button class="button-style">Proceed to Work</button>
+        </a>
+        {% elif name == 'Unknown' %}
+        <a href="/">
+            <button class="button-style" style="background-color: red;">Go Back to Home</button>
+        </a>
+        {% endif %}
+    </div>
 </body>
 </html>
