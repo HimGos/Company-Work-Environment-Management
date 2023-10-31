@@ -2,10 +2,41 @@
 <html>
 <head>
     <title>Work Page</title>
+    <style>
+        /* Center the content horizontally while keeping it at the top */
+        body {
+            text-align: center;
+        }
+
+        /* Style the "End Shift" button */
+        form button {
+            font-size: 24px;
+            background-color: green;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Add hover styles for the button */
+        form button:hover {
+            background-color: darkgreen;
+        }
+
+        /* Style the h1 element */
+        h1 {
+            font-size: 36px;
+            margin: 20px;
+        }
+
+        /* Style the video container to limit its width */
+        #video-container {
+            max-width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the Work Page</h1>
-    <p>This is where you can do your work.</p>
+    <h1>Good Luck, Keep Working!</h1>
     <div id="video-container">
         <img id="webcam-video" src="{{ url_for('workvideo') }}" style="max-width: 100%;">
     </div>
